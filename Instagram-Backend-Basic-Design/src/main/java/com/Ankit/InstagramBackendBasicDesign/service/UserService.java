@@ -8,6 +8,7 @@ import com.Ankit.InstagramBackendBasicDesign.model.dto.SignInInput;
 import com.Ankit.InstagramBackendBasicDesign.model.dto.SignUpOutput;
 import com.Ankit.InstagramBackendBasicDesign.model.dto.commentDto.AddCommentDto;
 import com.Ankit.InstagramBackendBasicDesign.model.dto.commentDto.GetCommentDto;
+import com.Ankit.InstagramBackendBasicDesign.model.dto.likeDto.GetLikeDto;
 import com.Ankit.InstagramBackendBasicDesign.model.enums.AccountType;
 import com.Ankit.InstagramBackendBasicDesign.repository.IUserRpo;
 import com.Ankit.InstagramBackendBasicDesign.service.utility.emailUtility.EmailHandler;
@@ -39,6 +40,8 @@ public class UserService {
     FollowRequestService followRequestService;
     @Autowired
     CommentService commentService;
+    @Autowired
+    LikeService likeService;
     public SignUpOutput signUpUser(User user) {
 
         boolean signUpStatus = true;
@@ -404,5 +407,59 @@ public class UserService {
             return commentService.deleteCommentById(myself,commentId);
         }
         return "invalid credentials";
+    }
+
+    public String likePost(String email, String token, Long postId) {
+        if (authenticationService.authenticate(email, token)) {
+            User myself = userRepo.findFirstByUserEmail(email);
+            Post post =postService.getPostById(postId);
+
+            if(post==null){
+                return "invalid post id";
+            }
+            User postUser =post.getUser();
+            if(likeService.isPostAlreadyLiked(myself,post)){
+                return "already like";
+            }
+            if(postUser.getAccountType().toString().equals("PRIVATE")){
+                List<Follow>followList = followService.followRepo.findByFollowedToAndWantToFollow(postUser,myself);
+                return (followList.size()>0?likeService.likePost(myself,post):"you can't like this user's post this account is private;");
+            }
+            return likeService.likePost(myself,post);
+
+        }
+        return "invalid credentials";
+    }
+
+    public String unlikePostById(String email, String token, Long postId) {
+        if (authenticationService.authenticate(email, token)) {
+            User myself = userRepo.findFirstByUserEmail(email);
+            Post post =postService.getPostById(postId);
+            if(post==null){
+                return "invalid post id";
+            }
+            if(!likeService.isPostAlreadyLiked(myself,post)){
+                return "already unlike ";
+            }
+           return likeService.deleteLike(myself,post);
+        }
+        return "invalid credentials";
+    }
+
+    public ResponseEntity<List<GetLikeDto>> getAllLikesByPostId(String email, String token, Long postId) {
+        if (authenticationService.authenticate(email, token)) {
+            User myself = userRepo.findFirstByUserEmail(email);
+            Post post =postService.getPostById(postId);
+            if(post==null){
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+            User postUser =post.getUser();
+            if(postUser.getAccountType().toString().equals("PRIVATE")){
+                List<Follow>followList = followService.followRepo.findByFollowedToAndWantToFollow(postUser,myself);
+                return (followList.size()>0?likeService.getAllLikesByPostId(post): new ResponseEntity<>(HttpStatus.FORBIDDEN));
+            }
+        return likeService.getAllLikesByPostId(post);
+        }
+        return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
     }
 }
