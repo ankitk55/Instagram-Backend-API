@@ -419,9 +419,9 @@ public class UserService {
             }
             User postUser =post.getUser();
             if(likeService.isPostAlreadyLiked(myself,post)){
-                return "already like";
+                return "already likeed";
             }
-            if(postUser.getAccountType().toString().equals("PRIVATE")){
+            if(postUser.getAccountType().toString().equals("PRIVATE") && !myself.equals(postUser)){
                 List<Follow>followList = followService.followRepo.findByFollowedToAndWantToFollow(postUser,myself);
                 return (followList.size()>0?likeService.likePost(myself,post):"you can't like this user's post this account is private;");
             }
@@ -454,7 +454,7 @@ public class UserService {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
             User postUser =post.getUser();
-            if(postUser.getAccountType().toString().equals("PRIVATE")){
+            if(postUser.getAccountType().toString().equals("PRIVATE") && !myself.equals(postUser)){
                 List<Follow>followList = followService.followRepo.findByFollowedToAndWantToFollow(postUser,myself);
                 return (followList.size()>0?likeService.getAllLikesByPostId(post): new ResponseEntity<>(HttpStatus.FORBIDDEN));
             }

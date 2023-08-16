@@ -35,7 +35,7 @@ public class LikeService {
     public String deleteLike(User liker, Post post) {
         Like like = likeRepo.findFirstByLikerAndPost(liker,post);
         likeRepo.delete(like);
-        return "like deleted for post Id "+post.getPostId();
+        return "you have successfully this post Id : "+post.getPostId();
     }
 
     public ResponseEntity<List<GetLikeDto>> getAllLikesByPostId(Post post) {
